@@ -46,11 +46,13 @@ function Invoke-BatchWithInput([string]$inputText, [string]$logPath, [string]$wo
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = $env:ComSpec
     # The batch filename is deliberately simple and the working directory isolates the fixture.
-    $psi.Arguments = '/d /s /c "call UnRen-DDAC-v145.bat"'
+    # CMD set /p is more deterministic with a redirected input file than a prefilled pipe.
+    $inputFile = Join-Path $workingDirectory 'ddac-ci-input.txt'
+    [IO.File]::WriteAllText($inputFile, $inputText, [Text.Encoding]::ASCII)
+    $psi.Arguments = '/d /q /s /c "call UnRen-DDAC-v145.bat < ddac-ci-input.txt"'
     $psi.WorkingDirectory = $workingDirectory
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true
-    $psi.RedirectStandardInput = $true
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
     $p = New-Object System.Diagnostics.Process
@@ -58,8 +60,6 @@ function Invoke-BatchWithInput([string]$inputText, [string]$logPath, [string]$wo
     [void]$p.Start()
     $stdoutTask = $p.StandardOutput.ReadToEndAsync()
     $stderrTask = $p.StandardError.ReadToEndAsync()
-    $p.StandardInput.Write($inputText)
-    $p.StandardInput.Close()
     if (-not $p.WaitForExit($timeoutSeconds * 1000)) {
         try { $p.Kill() } catch {}
         try { $p.WaitForExit(10000) | Out-Null } catch {}
@@ -114,7 +114,10 @@ Write-Host '== 3. End-to-end BAT extraction and reintegration in CMD =='
 $fixture = Join-Path $env:RUNNER_TEMP 'DDLC-fixture-acao-espacos'
 if (Test-Path -LiteralPath $fixture) { Remove-Item -LiteralPath $fixture -Recurse -Force }
 New-Item -ItemType Directory -Force -Path (Join-Path $fixture 'game') | Out-Null
-Copy-Item -LiteralPath $bat -Destination (Join-Path $fixture 'UnRen-DDAC-v145.bat')
+# CMD may not process a UTF-8 BOM before the first batch command consistently.
+# Execute a BOM-less fixture copy; canonical encoding and embedded payload are checked above.
+$batFixture = [IO.File]::ReadAllText($bat, [Text.Encoding]::UTF8)
+[IO.File]::WriteAllText((Join-Path $fixture 'UnRen-DDAC-v145.bat'), $batFixture, (New-Object System.Text.UTF8Encoding($false))
 $scriptOriginal = @'
 define e = Character("Emily")
 label start:
