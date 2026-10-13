@@ -117,7 +117,7 @@ New-Item -ItemType Directory -Force -Path (Join-Path $fixture 'game') | Out-Null
 # CMD may not process a UTF-8 BOM before the first batch command consistently.
 # Execute a BOM-less fixture copy; canonical encoding and embedded payload are checked above.
 $batFixture = [IO.File]::ReadAllText($bat, [Text.Encoding]::UTF8)
-[IO.File]::WriteAllText((Join-Path $fixture 'UnRen-DDAC-v145.bat'), $batFixture, (New-Object System.Text.UTF8Encoding($false))
+[IO.File]::WriteAllText((Join-Path $fixture 'UnRen-DDAC-v145.bat'), $batFixture, (New-Object System.Text.UTF8Encoding($false)))
 $scriptOriginal = @'
 define e = Character("Emily")
 label start:
