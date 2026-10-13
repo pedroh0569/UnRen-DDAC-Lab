@@ -5997,6 +5997,7 @@ def _rotulo_credito_eh_categoria(label):
     # Um cabeçalho só é traduzido quando contém vocabulário inequívoco de
     # créditos; nomes próprios terminados em ':' não entram por engano.
     return any(normal.startswith(prefixo) or palavra in normal for prefixo in CREDITOS_PREFIXOS_CATEGORIA for palavra in (prefixo.strip(),))
+
 def _linha_credito_role_eh_categoria(line):
     normal = _normalizar_linha_credito(line)
     return normal in CREDITOS_CATEGORIAS_TRADUZIVEIS and len(normal) <= 40
