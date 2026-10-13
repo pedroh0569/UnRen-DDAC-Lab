@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
 setlocal EnableExtensions DisableDelayedExpansion
 REM DDAC internal build: V144-DualBrain-GoogleRPC-CreditCache-FastResidual-MultilineCompat-ScreenDynamicText-Windows
