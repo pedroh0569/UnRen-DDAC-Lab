@@ -42,6 +42,34 @@ function Invoke-ProcessWithInput([string]$exe, [string[]]$arguments, [string]$in
     return [pscustomobject]@{ ExitCode = $p.ExitCode; Output = $outText; Error = $errText }
 }
 
+function Invoke-BatchWithInput([string]$inputText, [string]$logPath, [string]$workingDirectory, [int]$timeoutSeconds = 900) {
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $env:ComSpec
+    # The batch filename is deliberately simple and the working directory isolates the fixture.
+    $psi.Arguments = '/d /s /c "call UnRen-DDAC-v145.bat"'
+    $psi.WorkingDirectory = $workingDirectory
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $psi.RedirectStandardInput = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $p = New-Object System.Diagnostics.Process
+    $p.StartInfo = $psi
+    [void]$p.Start()
+    $stdoutTask = $p.StandardOutput.ReadToEndAsync()
+    $stderrTask = $p.StandardError.ReadToEndAsync()
+    $p.StandardInput.Write($inputText)
+    $p.StandardInput.Close()
+    if (-not $p.WaitForExit($timeoutSeconds * 1000)) {
+        try { $p.Kill() } catch {}
+        throw "Timeout ($timeoutSeconds s): cmd.exe $($psi.Arguments)"
+    }
+    $outText = $stdoutTask.Result
+    $errText = $stderrTask.Result
+    [IO.File]::WriteAllText($logPath, ($outText + "`r`n--- STDERR ---`r`n" + $errText), (New-Object System.Text.UTF8Encoding($false)))
+    return [pscustomobject]@{ ExitCode = $p.ExitCode; Output = $outText; Error = $errText }
+}
+
 Write-Host '== 1. Verify BAT embedded Python payload =='
 $lines = [IO.File]::ReadAllLines($bat, [Text.Encoding]::UTF8)
 $start = [Array]::IndexOf($lines, 'REM ##DDAC_DIALOGOS_PYTHON_START##')
@@ -76,7 +104,7 @@ foreach ($mode in @('selftest_v145','preflight_tokens','preflight_sintaxe')) {
 }
 
 Write-Host '== 3. End-to-end BAT extraction and reintegration in CMD =='
-$fixture = Join-Path $env:RUNNER_TEMP 'DDLC fixture - ação e espaços'
+$fixture = Join-Path $env:RUNNER_TEMP 'DDLC-fixture-acao-espacos'
 if (Test-Path -LiteralPath $fixture) { Remove-Item -LiteralPath $fixture -Recurse -Force }
 New-Item -ItemType Directory -Force -Path (Join-Path $fixture 'game') | Out-Null
 Copy-Item -LiteralPath $bat -Destination (Join-Path $fixture 'UnRen-DDAC-v145.bat')
@@ -85,11 +113,11 @@ define e = Character("Emily")
 label start:
     e "Hello there."
     menu:
-        "Choose a route":
-            "Open the door":
-                $ route = "door"
-            "Stay here":
-                $ route = "stay"
+        "Choose a route"
+        "Open the door":
+            $ route = "door"
+        "Stay here":
+            $ route = "stay"
     e "Goodbye."
 '@
 $screensOriginal = @'
@@ -110,10 +138,9 @@ $originalScreensHash = (Get-FileHash -LiteralPath $screensPath -Algorithm SHA256
 # official embedded Python (size/SHA checked by the BAT), continue, then dismiss pause.
 $extractInput = "1`r`n1`r`n1`r`n2`r`n1`r`nx`r`n"
 $batLog1 = Join-Path $results 'bat-option-1-extraction.log'
-$cmdArgs1 = @('/d','/c',('"' + (Join-Path $fixture 'UnRen-DDAC-v145.bat') + '" < "' + (Join-Path $results 'bat-input-extract.txt') + '" > "' + $batLog1 + '" 2>&1'))
 [IO.File]::WriteAllText((Join-Path $results 'bat-input-extract.txt'), $extractInput, [Text.Encoding]::ASCII)
-$proc1 = Start-Process -FilePath $env:ComSpec -ArgumentList $cmdArgs1 -WorkingDirectory $fixture -PassThru -Wait
-Assert-True ($proc1.ExitCode -eq 0) "BAT extraction exited $($proc1.ExitCode); inspect $batLog1"
+$proc1 = Invoke-BatchWithInput -inputText $extractInput -logPath $batLog1 -workingDirectory $fixture -timeoutSeconds 900
+Assert-True ($proc1.ExitCode -eq 0) "BAT extraction exited $($proc1.ExitCode); inspect $batLog1. Output: $($proc1.Output.Substring(0, [Math]::Min(1200, $proc1.Output.Length)))"
 $extractLog = Get-Content -LiteralPath (Join-Path $fixture 'UnRen-DDAC-Extração-de-Diálogos.txt') -Raw -ErrorAction Stop
 Assert-True ($extractLog.Contains('SEM VALIDAÇÃO')) 'Extraction report did not clearly mark oracle fallback.'
 $extracted = Join-Path $fixture 'DDAC-Diálogos-Extraídos'
@@ -137,9 +164,8 @@ $reinjectInput = "1`r`n3`r`n1`r`nx`r`n"
 $input2 = Join-Path $results 'bat-input-reinject.txt'
 [IO.File]::WriteAllText($input2, $reinjectInput, [Text.Encoding]::ASCII)
 $batLog2 = Join-Path $results 'bat-option-3-reintegration.log'
-$cmdArgs2 = @('/d','/c',('"' + (Join-Path $fixture 'UnRen-DDAC-v145.bat') + '" < "' + $input2 + '" > "' + $batLog2 + '" 2>&1'))
-$proc2 = Start-Process -FilePath $env:ComSpec -ArgumentList $cmdArgs2 -WorkingDirectory $fixture -PassThru -Wait
-Assert-True ($proc2.ExitCode -eq 0) "BAT reintegration exited $($proc2.ExitCode); inspect $batLog2"
+$proc2 = Invoke-BatchWithInput -inputText $reinjectInput -logPath $batLog2 -workingDirectory $fixture -timeoutSeconds 900
+Assert-True ($proc2.ExitCode -eq 0) "BAT reintegration exited $($proc2.ExitCode); inspect $batLog2. Output: $($proc2.Output.Substring(0, [Math]::Min(1200, $proc2.Output.Length)))"
 $outScript = Join-Path $fixture 'DDAC-Diálogos-Mesclados\game\script.rpy'
 $outScreens = Join-Path $fixture 'DDAC-Diálogos-Mesclados\game\screens.rpy'
 Assert-True (Test-Path -LiteralPath $outScript) 'Reintegrated script.rpy missing.'

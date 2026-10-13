@@ -52,11 +52,11 @@ label start:
     e "Hello, Ren'Py oracle!"
     "A plain narration line."
     menu:
-        "Choose an option":
-            "First choice":
-                $ selected = "first"
-            "Second choice":
-                $ selected = "second"
+        "Choose an option"
+        "First choice":
+            $ selected = "first"
+        "Second choice":
+            $ selected = "second"
 '@
 $screensText = @'
 screen qa_screen():
