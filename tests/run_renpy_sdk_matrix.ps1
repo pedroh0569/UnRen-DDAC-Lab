@@ -66,6 +66,7 @@ screen qa_screen():
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [IO.File]::WriteAllText((Join-Path $game 'script.rpy'), $scriptText, $utf8NoBom)
 [IO.File]::WriteAllText((Join-Path $game 'screens.rpy'), $screensText, $utf8NoBom)
+[IO.File]::WriteAllText((Join-Path $game 'options.rpy'), "init python:`r`n    config.debug_sound = False`r`n", $utf8NoBom)
 
 $env:DDAC_RENPY_SDK = $sdkRoot
 $python = (Get-Command python -ErrorAction Stop).Source

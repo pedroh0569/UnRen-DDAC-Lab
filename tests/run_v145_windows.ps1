@@ -131,15 +131,16 @@ $screensPath = Join-Path $fixture 'game/screens.rpy'
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [IO.File]::WriteAllText($scriptPath, $scriptOriginal.Replace("`n", "`r`n"), $utf8NoBom)
 [IO.File]::WriteAllText($screensPath, $screensOriginal.Replace("`n", "`r`n"), $utf8NoBom)
+[IO.File]::WriteAllText((Join-Path $fixture 'log.txt'), "Ren'Py 8.0.3`r`n", $utf8NoBom)
 $originalScriptHash = (Get-FileHash -LiteralPath $scriptPath -Algorithm SHA256).Hash
 $originalScreensHash = (Get-FileHash -LiteralPath $screensPath -Algorithm SHA256).Hash
 
 # Language 1, accept the test environment's DDAC terms, menu 1, download the
 # official embedded Python (size/SHA checked by the BAT), continue, then dismiss pause.
-$extractInput = "1`r`n1`r`n1`r`n2`r`n1`r`nx`r`n"
+$extractInput = "1`r`n1`r`n1`r`n2`r`n1`r`n2`r`n1`r`nx`r`n"
 $batLog1 = Join-Path $results 'bat-option-1-extraction.log'
 [IO.File]::WriteAllText((Join-Path $results 'bat-input-extract.txt'), $extractInput, [Text.Encoding]::ASCII)
-$proc1 = Invoke-BatchWithInput -inputText $extractInput -logPath $batLog1 -workingDirectory $fixture -timeoutSeconds 900
+$proc1 = Invoke-BatchWithInput -inputText $extractInput -logPath $batLog1 -workingDirectory $fixture -timeoutSeconds 360
 Assert-True ($proc1.ExitCode -eq 0) "BAT extraction exited $($proc1.ExitCode); inspect $batLog1. Output: $($proc1.Output.Substring(0, [Math]::Min(1200, $proc1.Output.Length)))"
 $extractLog = Get-Content -LiteralPath (Join-Path $fixture 'UnRen-DDAC-Extração-de-Diálogos.txt') -Raw -ErrorAction Stop
 Assert-True ($extractLog.Contains('SEM VALIDAÇÃO')) 'Extraction report did not clearly mark oracle fallback.'
@@ -164,7 +165,7 @@ $reinjectInput = "1`r`n3`r`n1`r`nx`r`n"
 $input2 = Join-Path $results 'bat-input-reinject.txt'
 [IO.File]::WriteAllText($input2, $reinjectInput, [Text.Encoding]::ASCII)
 $batLog2 = Join-Path $results 'bat-option-3-reintegration.log'
-$proc2 = Invoke-BatchWithInput -inputText $reinjectInput -logPath $batLog2 -workingDirectory $fixture -timeoutSeconds 900
+$proc2 = Invoke-BatchWithInput -inputText $reinjectInput -logPath $batLog2 -workingDirectory $fixture -timeoutSeconds 360
 Assert-True ($proc2.ExitCode -eq 0) "BAT reintegration exited $($proc2.ExitCode); inspect $batLog2. Output: $($proc2.Output.Substring(0, [Math]::Min(1200, $proc2.Output.Length)))"
 $outScript = Join-Path $fixture 'DDAC-Diálogos-Mesclados\game\script.rpy'
 $outScreens = Join-Path $fixture 'DDAC-Diálogos-Mesclados\game\screens.rpy'
