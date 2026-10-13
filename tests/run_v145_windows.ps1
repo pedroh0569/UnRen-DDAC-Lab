@@ -55,7 +55,10 @@ for ($i = $start + 1; $i -lt $end; $i++) {
 $embedded = [Convert]::FromBase64String(($b64 -join ''))
 $embeddedPath = Join-Path $results 'embedded-from-bat.py'
 [IO.File]::WriteAllBytes($embeddedPath, $embedded)
-$sourceHash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToLowerInvariant()
+$sourceNormalized = Join-Path $results 'source-normalized.py'
+$sourceText = [IO.File]::ReadAllText($source).Replace("`r`n","`n").Replace("`r","`n")
+[IO.File]::WriteAllText($sourceNormalized, $sourceText, (New-Object System.Text.UTF8Encoding($false)))
+$sourceHash = (Get-FileHash -LiteralPath $sourceNormalized -Algorithm SHA256).Hash.ToLowerInvariant()
 $embeddedHash = (Get-FileHash -LiteralPath $embeddedPath -Algorithm SHA256).Hash.ToLowerInvariant()
 Assert-True ($sourceHash -eq $embeddedHash) "Payload mismatch: source=$sourceHash embedded=$embeddedHash"
 Write-Host "PAYLOAD MATCH: $sourceHash"

@@ -87,7 +87,7 @@ if (-not $report.oraculo_renpy_ativo) {
     throw "Oracle did not activate for Ren'Py $version. status=$status; oracle=$detail; inspect $log"
 }
 if ($report.terminal_status -ne 'EXTRACAO_CONCLUIDA') {
-    throw "Unexpected terminal status for Ren'Py $version: $($report.terminal_status)"
+    throw "Unexpected terminal status for Ren'Py ${version}: $($report.terminal_status)"
 }
 Write-Host "PASS: Ren'Py $version oracle activated; native candidates=$($report.candidatos_renpy), canonical entries=$($report.canonicos)"
 $summaryPath = Join-Path $results ("renpy-sdk-" + $version + '-summary.txt')
