@@ -62,7 +62,14 @@ function Invoke-BatchWithInput([string]$inputText, [string]$logPath, [string]$wo
     $p.StandardInput.Close()
     if (-not $p.WaitForExit($timeoutSeconds * 1000)) {
         try { $p.Kill() } catch {}
-        throw "Timeout ($timeoutSeconds s): cmd.exe $($psi.Arguments)"
+        try { $p.WaitForExit(10000) | Out-Null } catch {}
+        $outText = ''
+        $errText = ''
+        try { $outText = $stdoutTask.Result } catch {}
+        try { $errText = $stderrTask.Result } catch {}
+        [IO.File]::WriteAllText($logPath, ($outText + "`r`n--- STDERR ---`r`n" + $errText), (New-Object System.Text.UTF8Encoding($false)))
+        $tail = $outText.Substring([Math]::Max(0, $outText.Length - 3000))
+        throw "Timeout ($timeoutSeconds s): cmd.exe $($psi.Arguments). Partial output saved to $logPath. Last output: $tail"
     }
     $outText = $stdoutTask.Result
     $errText = $stderrTask.Result
