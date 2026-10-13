@@ -32,6 +32,8 @@ jobs:
             download_base: 'https://www.renpy.org/dl/6.99.12.4'
           - version: '7.4.5'
             download_base: 'https://www.renpy.org/dl/7.4.5'
+          - version: '7.5.3'
+            download_base: 'https://www.renpy.org/dl/7.5.3'
           - version: '7.8.7'
             download_base: 'https://www.renpy.org/dl/7.8.7'
           - version: '7.7.1'
