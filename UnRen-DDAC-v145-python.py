@@ -997,7 +997,8 @@ NOMES_TECNICOS_CONHECIDOS = {
 EXTENSOES_TECNICAS = (
     "ttf", "otf", "png", "jpg", "jpeg", "webp", "webm", "ogg", "mp3", "wav",
     "rpy", "rpyc", "rpa", "txt", "ico",
-)# Referências a arquivos/recursos não são diálogos traduzíveis.
+)
+# Referências a arquivos/recursos não são diálogos traduzíveis.
 # Além das extensões conhecidas, o scanner compara cada texto entre aspas
 # com um índice de todos os arquivos existentes dentro da pasta game.
 # Exemplos: "gui/menu_art_y.png", "gui/overlay/main_menu.png".
@@ -1996,7 +1997,8 @@ def analisar_construtores_achievements(caminho, conteudo):
             encontrados.append((pos_strings[1].start(), pos_strings[1].group(0), 'description'))
 
         # Forma nomeada: acrescenta/substitui campos semanticamente explícitos.
-        for campo in ('name', 'description', 'locked_desc'):            for mn in re.finditer(r'\b' + re.escape(campo) + r'\s*=\s*(' + QSTR + r')', chamada, re.I):
+        for campo in ('name', 'description', 'locked_desc'):
+            for mn in re.finditer(r'\b' + re.escape(campo) + r'\s*=\s*(' + QSTR + r')', chamada, re.I):
                 encontrados.append((mn.start(1), mn.group(1), campo))
 
         vistos_span = set()
@@ -2995,7 +2997,8 @@ def extrair_corpos_poemas(caminho, linhas_raw):
         if conteudo[linha_inicio:m_ctor.start()].lstrip().startswith('#'):
             continue
         abre = conteudo.find('(', m_ctor.start())
-        fecha = _find_matching_paren_python(conteudo, abre)        if fecha < 0:
+        fecha = _find_matching_paren_python(conteudo, abre)
+        if fecha < 0:
             continue
         bloco = conteudo[m_ctor.start():fecha + 1]
         m_text = text_re.search(bloco)
@@ -3994,7 +3997,8 @@ def extrair_arquivo_com_mapa(caminho, variaveis_nome_dinamico, indice_arquivos=N
                             registrar(numero_linha, m.start(0), m.end(0), qret, 'ui', 92, 'fragmento textual de exceção')
 
             primeiro_m_kw = re.match(r'^([A-Za-z_][\w.]*)', linha_limpa)
-            primeiro_low_kw = primeiro_m_kw.group(1).lower() if primeiro_m_kw else ''            for m in VISIBLE_KWARG_RE.finditer(linha_limpa):
+            primeiro_low_kw = primeiro_m_kw.group(1).lower() if primeiro_m_kw else ''
+            for m in VISIBLE_KWARG_RE.finditer(linha_limpa):
                 if primeiro_low_kw.startswith('build.'):
                     continue
                 if (primeiro_low_kw not in BIBLIOTECA_RENPY.get('tokens_nao_dialogo', set())
@@ -4993,7 +4997,8 @@ def _preparar_oraculo_renpy(pasta_game, candidatos, log):
             if cp.returncode != 0 or not os.path.isfile(tab):
                 msg = u"{}: Dialogue código={} | dialogue.tab={} | saída={}".format(
                     sdk, cp.returncode, u"SIM" if os.path.isfile(tab) else u"NÃO", u" || ".join(tail))
-                ORACULO_RENPY["falhas"].append(msg)                ORACULO_RENPY["diagnostico_temp"] = temp
+                ORACULO_RENPY["falhas"].append(msg)
+                ORACULO_RENPY["diagnostico_temp"] = temp
                 falhas.append(msg); temp = None; continue
 
             entradas_brutas = _ler_dialogue_tab(tab)
@@ -6991,7 +6996,8 @@ def aplicar_correcao_individual_google(texto, rel, tipo_entrada, destino, log=No
         if isinstance(traducao, str):
             if log:
                 log.aviso(u"Correção individual {0} aplicada em {1}; a regra casa apenas com o texto original.".format(
-                    regra.get(u"id", u"SEM_ID"), rel))            return traducao, regra.get(u"id", u"SEM_ID")
+                    regra.get(u"id", u"SEM_ID"), rel))
+            return traducao, regra.get(u"id", u"SEM_ID")
     return None, None
 
 
@@ -7990,7 +7996,8 @@ def _diagnostico_rpc_unico(cliente, origem, destino, numero):
 
 
 def executar_diagnostico_google(raiz):
-    caminho_log = os.path.join(raiz, GOOGLE_CACHE_DIAGNOSTICO_NOME)    log = Log(caminho_log)
+    caminho_log = os.path.join(raiz, GOOGLE_CACHE_DIAGNOSTICO_NOME)
+    log = Log(caminho_log)
     log.separador()
     log.titulo(u"DDAC - Diagnóstico do Google Translate")
     log.info(u"Teste leve: 1 RPC individual + 4 RPCs concorrentes.")
@@ -8989,7 +8996,8 @@ def _dual_engine_common_duplicate(rel,pasta_game,raiz=None):
     if not (os.path.isfile(src) and os.path.isfile(common)):
         return False, None
     try:
-        h1=sha256_arquivo(src); h2=sha256_arquivo(common)    except Exception:
+        h1=sha256_arquivo(src); h2=sha256_arquivo(common)
+    except Exception:
         return False, None
     return h1 == h2, h2
 
