@@ -1,0 +1,93 @@
+name: UnRen-DDAC V145 Windows regression
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'UnRen-DDAC-v145.bat'
+      - 'UnRen-DDAC-v145-python.py'
+      - 'build_v145_payload.py'
+      - 'tests/**'
+      - '.github/workflows/v145-windows.yml'
+  pull_request:
+    paths:
+      - 'UnRen-DDAC-v145.bat'
+      - 'UnRen-DDAC-v145-python.py'
+      - 'build_v145_payload.py'
+      - 'tests/**'
+      - '.github/workflows/v145-windows.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  renpy-sdk-compatibility:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: '6.99.12.4'
+            download_base: 'https://www.renpy.org/dl/6.99.12.4'
+          - version: '7.4.5'
+            download_base: 'https://www.renpy.org/dl/7.4.5'
+          - version: '7.8.7'
+            download_base: 'https://www.renpy.org/dl/7.8.7'
+          - version: '8.0.3'
+            download_base: 'https://www.renpy.org/dl/8.0.3'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python for DDAC core
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run SDK oracle compatibility test
+        shell: powershell
+        env:
+          RENPY_VERSION: ${{ matrix.version }}
+          RENPY_DOWNLOAD_BASE: ${{ matrix.download_base }}
+        run: .\tests\run_renpy_sdk_matrix.ps1
+
+      - name: Upload SDK diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ddac-renpy-sdk-${{ matrix.version }}-results
+          path: test-results/renpy-sdk-${{ matrix.version }}*
+          if-no-files-found: warn
+
+  windows-regression:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python for harness tests
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run synthetic template/layout compatibility matrix
+        shell: powershell
+        run: python .\tests\test_compatibility_matrix.py
+
+      - name: Run adversarial extraction and reintegration matrix
+        shell: powershell
+        run: python .\tests\test_adversarial_matrix.py
+
+      - name: Run Windows wrapper and round-trip tests
+        shell: powershell
+        run: .\tests\run_v145_windows.ps1
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ddac-v145-windows-test-results
+          path: test-results/
+          if-no-files-found: warn
